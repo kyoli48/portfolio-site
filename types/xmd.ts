@@ -23,7 +23,7 @@ export type EssayXMDMetadata = BaseXMDMetadata & {
 }
 
 export type ProjectXMDMetadata = BaseXMDMetadata & {
-  status: 'completed' | 'in-progress'
+  status: 'completed' | 'in-progress' | 'active'
   color?: string
   github?: string
   demo?: string

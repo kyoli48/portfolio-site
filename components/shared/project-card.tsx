@@ -42,10 +42,16 @@ export function ProjectCard({ project }: ProjectCardProps) {
                 <span className={`
                   text-xs font-medium px-2.5 py-1 rounded-full
                   ${metadata.status === 'completed' 
-                    ? 'bg-green-500/10 text-green-500 border border-green-500/20' 
-                    : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'}
+                    ? 'bg-green-500/10 text-green-500 border border-green-500/20'
+                    : metadata.status === 'active'
+                    ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                    : 'bg-blue-500/10 text-blue-500 border border-blue-500/20'}
                 `}>
-                  {metadata.status === 'completed' ? 'Completed' : 'In Progress'}
+                  {metadata.status === 'completed' 
+                    ? 'Completed' 
+                    : metadata.status === 'active'
+                    ? 'Active'
+                    : 'In Progress'}
                 </span>
               )}
 
@@ -95,10 +101,16 @@ export function ProjectCard({ project }: ProjectCardProps) {
               <span className={`
                 text-xs font-medium px-2.5 py-1 rounded-full
                 ${metadata.status === 'completed' 
-                  ? 'bg-green-500/10 text-green-500 border border-green-500/20' 
-                  : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'}
+                  ? 'bg-green-500/10 text-green-500 border border-green-500/20'
+                  : metadata.status === 'active'
+                  ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                  : 'bg-blue-500/10 text-blue-500 border border-blue-500/20'}
               `}>
-                {metadata.status === 'completed' ? 'Completed' : 'In Progress'}
+                {metadata.status === 'completed' 
+                  ? 'Completed' 
+                  : metadata.status === 'active'
+                  ? 'Active'
+                  : 'In Progress'}
               </span>
             )}
 
