@@ -3,7 +3,7 @@ title: Building an XMD Parser in TypeScript
 description: A deep dive into building a custom markdown-like document format parser with TypeScript
 date: 2024-01-15
 tags: typescript, parsing, markdown, xmd
-image: /images/blog/xmd-parser.jpg
+//image: /images/blog/xmd-parser.jpg
 featured: true
 readingTime: 8
 draft: false

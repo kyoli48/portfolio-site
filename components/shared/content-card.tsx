@@ -3,15 +3,14 @@
 import { XMDDocument } from '@/types/xmd'
 import Link from 'next/link'
 import Image from 'next/image'
-import { BookOpen, Clock } from 'lucide-react'
+import { Clock } from 'lucide-react'
 
 type ContentCardProps = {
   content: XMDDocument & { slug: string }
   type: 'blog' | 'essay'
-  showWordCount?: boolean
 }
 
-export function ContentCard({ content, type, showWordCount = false }: ContentCardProps) {
+export function ContentCard({ content, type }: ContentCardProps) {
   const isEssay = type === 'essay'
   const { metadata, slug } = content
   const linkPath = isEssay ? `/essays/${slug}` : `/blog/${slug}`
@@ -52,13 +51,7 @@ export function ContentCard({ content, type, showWordCount = false }: ContentCar
             })}
           </time>
         )}
-        {showWordCount && 'wordCount' in metadata && (
-          <div className="flex items-center gap-1">
-            <BookOpen className="h-4 w-4" />
-            <span>{metadata.wordCount} words</span>
-          </div>
-        )}
-        {!showWordCount && 'readingTime' in metadata && (
+        {'readingTime' in metadata && metadata.readingTime && (
           <div className="flex items-center gap-1">
             <Clock className="h-4 w-4" />
             <span>{metadata.readingTime} min read</span>

@@ -21,6 +21,22 @@ function validateMetadata(metadata: any, type: 'blog' | 'essays' | 'projects'): 
     }
   }
 
+  // Convert boolean strings
+  if (typeof metadata.featured === 'string') {
+    metadata.featured = metadata.featured.toLowerCase() === 'true'
+  }
+  if (typeof metadata.draft === 'string') {
+    metadata.draft = metadata.draft.toLowerCase() === 'true'
+  }
+
+  // Convert numeric strings
+  if (typeof metadata.readingTime === 'string') {
+    metadata.readingTime = parseInt(metadata.readingTime, 10)
+  }
+  if (typeof metadata.wordCount === 'string') {
+    metadata.wordCount = parseInt(metadata.wordCount, 10)
+  }
+
   // Validate type-specific metadata
   switch (type) {
     case 'blog':
@@ -57,26 +73,39 @@ export function parseXMD(content: string, type: 'blog' | 'essays' | 'projects'):
   currentLine++
   
   const metadata: Record<string, any> = {}
+  let inTagsBlock = false
+
   while (currentLine < lines.length && lines[currentLine] !== '---') {
     const line = lines[currentLine].trim()
+    
     if (line) {
-      // Handle YAML array format
-      if (line.startsWith('tags:')) {
+      if (line === 'tags:') {
+        // Start of tags block
+        inTagsBlock = true
         metadata.tags = []
         currentLine++
-        while (currentLine < lines.length && lines[currentLine].trim().startsWith('-')) {
-          const tag = lines[currentLine].trim().slice(1).trim()
-          metadata.tags.push(tag)
-          currentLine++
-        }
         continue
       }
 
-      // Handle regular key-value pairs
-      const [key, ...valueParts] = line.split(':')
-      const value = valueParts.join(':').trim()
-      metadata[key.trim()] = value
+      if (inTagsBlock && line.startsWith('-')) {
+        // Add tag to array
+        metadata.tags.push(line.slice(1).trim())
+      } else {
+        // End of tags block or regular key-value pair
+        inTagsBlock = false
+        const [key, ...valueParts] = line.split(':')
+        const value = valueParts.join(':').trim()
+        
+        // Handle special cases
+        if (key.trim() === 'tags' && !Array.isArray(metadata.tags)) {
+          // Handle inline tags (comma-separated)
+          metadata.tags = value.split(',').map(tag => tag.trim())
+        } else {
+          metadata[key.trim()] = value
+        }
+      }
     }
+    
     currentLine++
   }
 

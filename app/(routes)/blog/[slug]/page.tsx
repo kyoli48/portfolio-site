@@ -9,7 +9,7 @@ type Props = {
   }
 }
 
-export default async function EssayPage({ params }: Props) {
-  const essay = await getContentBySlug('essays', params.slug)
-  return <ContentPage type="essay" content={essay} />
+export default async function BlogPostPage({ params }: Props) {
+  const post = await getContentBySlug('blog', params.slug)
+  return <ContentPage type="blog" content={post} />
 }

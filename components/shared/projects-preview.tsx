@@ -6,7 +6,7 @@ import { ArrowRight } from 'lucide-react'
 import { ProjectCard } from './project-card'
 
 interface ProjectsPreviewProps {
-  projects: XMDDocument[]
+  projects: (XMDDocument & { slug: string })[]
   className?: string
   viewAllPath?: string
 }
@@ -19,6 +19,10 @@ export function ProjectsPreview({
   const featuredProjects = projects
     .filter(project => project.metadata.featured)
     .slice(0, 2)
+
+  if (featuredProjects.length === 0) {
+    return null
+  }
 
   return (
     <section id="projects" className={`py-24 ${className}`}>
@@ -40,12 +44,15 @@ export function ProjectsPreview({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {featuredProjects.map((project) => (
-            <ProjectCard 
-              key={project.metadata.title} 
-              project={project}
-            />
-          ))}
+          {featuredProjects.map((project) => {
+            console.log('Project metadata:', project.metadata) // Debug log
+            return (
+              <ProjectCard 
+                key={project.slug}
+                project={project}
+              />
+            )
+          })}
         </div>
       </div>
     </section>
