@@ -1,0 +1,222 @@
+import { XMDDocument, XMDBlock, XMDMetadata, BlogXMDMetadata, EssayXMDMetadata, ProjectXMDMetadata } from '@/types/xmd'
+import { calculateReadingTime, calculateWordCount } from './utils/content'
+
+function validateMetadata(metadata: any, type: 'blog' | 'essays' | 'projects'): XMDMetadata {
+  // Validate base metadata
+  if (!metadata.title || !metadata.description) {
+    throw new Error('Required base metadata fields missing (title, description)')
+  }
+
+  // Convert tags to array if needed
+  if (metadata.tags) {
+    if (typeof metadata.tags === 'string') {
+      // Handle comma-separated string format
+      metadata.tags = metadata.tags.split(',').map((tag: string) => tag.trim())
+    } else if (Array.isArray(metadata.tags)) {
+      // Handle YAML array format (already an array)
+      metadata.tags = metadata.tags.map((tag: any) => String(tag).trim())
+    } else {
+      // Invalid format
+      delete metadata.tags
+    }
+  }
+
+  // Validate type-specific metadata
+  switch (type) {
+    case 'blog':
+      if (!metadata.date) {
+        throw new Error('Required blog metadata fields missing (date)')
+      }
+      return metadata as BlogXMDMetadata
+    
+    case 'essays':
+      if (!metadata.date || !metadata.category) {
+        throw new Error('Required essay metadata fields missing (date, category)')
+      }
+      return metadata as EssayXMDMetadata
+    
+    case 'projects':
+      if (!metadata.status) {
+        throw new Error('Required project metadata fields missing (status)')
+      }
+      return metadata as ProjectXMDMetadata
+    
+    default:
+      throw new Error(`Unknown content type: ${type}`)
+  }
+}
+
+export function parseXMD(content: string, type: 'blog' | 'essays' | 'projects'): XMDDocument {
+  const lines = content.split('\n')
+  let currentLine = 0
+  
+  // Parse metadata
+  if (lines[currentLine] !== '---') {
+    throw new Error('XMD must start with metadata section marked by ---')
+  }
+  currentLine++
+  
+  const metadata: Record<string, any> = {}
+  while (currentLine < lines.length && lines[currentLine] !== '---') {
+    const line = lines[currentLine].trim()
+    if (line) {
+      // Handle YAML array format
+      if (line.startsWith('tags:')) {
+        metadata.tags = []
+        currentLine++
+        while (currentLine < lines.length && lines[currentLine].trim().startsWith('-')) {
+          const tag = lines[currentLine].trim().slice(1).trim()
+          metadata.tags.push(tag)
+          currentLine++
+        }
+        continue
+      }
+
+      // Handle regular key-value pairs
+      const [key, ...valueParts] = line.split(':')
+      const value = valueParts.join(':').trim()
+      metadata[key.trim()] = value
+    }
+    currentLine++
+  }
+
+  if (currentLine >= lines.length || lines[currentLine] !== '---') {
+    throw new Error('Metadata section must end with ---')
+  }
+  currentLine++
+
+  // Validate and process metadata
+  const validatedMetadata = validateMetadata(metadata, type)
+
+  let currentBlock: XMDBlock | null = null
+  const blocks: XMDBlock[] = []
+  
+  // Parse content
+  while (currentLine < lines.length) {
+    const line = lines[currentLine]
+    
+    if (line.startsWith('![')) {
+      // Image syntax: ![alt text](url "optional caption")
+      const altEnd = line.indexOf(']')
+      const urlStart = line.indexOf('(', altEnd)
+      const urlEnd = line.indexOf(')', urlStart)
+      const captionStart = line.indexOf('"', urlStart)
+      const captionEnd = line.lastIndexOf('"')
+
+      if (altEnd > 0 && urlStart > 0 && urlEnd > 0) {
+        if (currentBlock) blocks.push(currentBlock as XMDBlock)
+        
+        const alt = line.slice(2, altEnd)
+        const url = line.slice(urlStart + 1, captionStart > urlStart ? captionStart - 1 : urlEnd)
+        const caption = captionStart > 0 && captionEnd > captionStart
+          ? line.slice(captionStart + 1, captionEnd)
+          : undefined
+
+        blocks.push({
+          type: 'image',
+          content: url,
+          alt,
+          caption
+        })
+        currentBlock = null
+      }
+    } else if (line.startsWith('```')) {
+      // Code block
+      const language = line.slice(3).trim()
+      let codeContent = ''
+      currentLine++
+
+      while (currentLine < lines.length && !lines[currentLine].startsWith('```')) {
+        codeContent += lines[currentLine] + '\n'
+        currentLine++
+      }
+
+      if (currentBlock) blocks.push(currentBlock as XMDBlock)
+      blocks.push({
+        type: 'code',
+        content: codeContent.trim(),
+        language
+      })
+      currentBlock = null
+    } else if (line.startsWith('# ')) {
+      if (currentBlock) blocks.push(currentBlock as XMDBlock)
+      currentBlock = {
+        type: 'heading',
+        level: 1,
+        content: line.slice(2).trim()
+      }
+    } else if (line.startsWith('## ')) {
+      if (currentBlock) blocks.push(currentBlock as XMDBlock)
+      currentBlock = {
+        type: 'heading',
+        level: 2,
+        content: line.slice(3).trim()
+      }
+    } else if (line.startsWith('> ')) {
+      if (currentBlock) blocks.push(currentBlock as XMDBlock)
+      const match = line.match(/^> (.*?)(?:\s*{(.*)})?$/)
+      if (match) {
+        const [, content, caption] = match
+        currentBlock = {
+          type: 'quote',
+          content: content.trim(),
+          caption
+        }
+      }
+    } else if (line.startsWith('- ')) {
+      if (currentBlock?.type !== 'list' || currentBlock.ordered) {
+        if (currentBlock) blocks.push(currentBlock as XMDBlock)
+        currentBlock = {
+          type: 'list',
+          ordered: false,
+          items: []
+        }
+      }
+      currentBlock.items?.push(line.slice(2).trim())
+    } else if (line.match(/^\d+\. /)) {
+      if (currentBlock?.type !== 'list' || !currentBlock.ordered) {
+        if (currentBlock) blocks.push(currentBlock as XMDBlock)
+        currentBlock = {
+          type: 'list',
+          ordered: true,
+          items: []
+        }
+      }
+      currentBlock.items?.push(line.replace(/^\d+\. /, '').trim())
+    } else if (line.startsWith('---')) {
+      if (currentBlock) blocks.push(currentBlock as XMDBlock)
+      blocks.push({
+        type: 'divider',
+        content: ''
+      })
+      currentBlock = null
+    } else if (line.trim()) {
+      if (!currentBlock || currentBlock.type !== 'paragraph') {
+        if (currentBlock) blocks.push(currentBlock as XMDBlock)
+        currentBlock = {
+          type: 'paragraph',
+          content: line.trim()
+        }
+      } else {
+        currentBlock.content += ' ' + line.trim()
+      }
+    }
+    
+    currentLine++
+  }
+  
+  if (currentBlock) blocks.push(currentBlock as XMDBlock)
+  
+  // Calculate reading time and word count for blog and essay content
+  if (type === 'blog' || type === 'essays') {
+    const wordCount = calculateWordCount(blocks)
+    const readingTime = calculateReadingTime(blocks)
+    metadata.wordCount = wordCount
+    metadata.readingTime = readingTime
+  }
+
+  return {
+    metadata: validatedMetadata,
+    content: blocks
+  }
+}

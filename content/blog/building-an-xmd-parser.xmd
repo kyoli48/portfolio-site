@@ -1,0 +1,111 @@
+---
+title: Building an XMD Parser in TypeScript
+description: A deep dive into building a custom markdown-like document format parser with TypeScript
+date: 2024-01-15
+tags: typescript, parsing, markdown, xmd
+image: /images/blog/xmd-parser.jpg
+featured: true
+readingTime: 8
+draft: false
+---
+
+# Building an XMD Parser in TypeScript
+
+Have you ever wanted to create your own document format? In this post, I'll walk through how I built XMD (eXtensible Markdown), a custom document format for my portfolio site.
+
+## What is XMD?
+
+XMD is a markdown-like format that adds structured metadata and enhanced content blocks. It's designed to be:
+
+- Simple to parse
+- Type-safe with TypeScript
+- Extensible for custom blocks
+- Compatible with modern React components
+
+## The Building Blocks
+
+Let's start with the core types that define our format:
+
+```typescript
+export type XMDMetadata = {
+  title: string
+  description: string
+  date: string
+  tags?: string[]
+  image?: string
+  featured?: boolean
+}
+
+export type XMDBlock = {
+  type: 'paragraph' | 'heading' | 'code' | 'quote'
+  content: string
+  level?: number // For headings
+  language?: string // For code blocks
+}
+```
+
+## Parsing Strategy
+
+The parser works in two main phases:
+
+1. Parse metadata between `---` markers
+2. Parse content blocks line by line
+
+Here's a simple example:
+
+```typescript
+function parseXMD(content: string) {
+  const lines = content.split('\n')
+  // Parse metadata...
+  // Parse blocks...
+  return { metadata, blocks }
+}
+```
+
+## Using with React
+
+The XMD format really shines when paired with React components:
+
+```tsx
+function XMDRenderer({ blocks }) {
+  return (
+    <article>
+      {blocks.map(block => {
+        switch (block.type) {
+          case 'heading':
+            return <h1>{block.content}</h1>
+          // Handle other blocks...
+        }
+      })}
+    </article>
+  )
+}
+```
+
+## Why Not Just Use Markdown?
+
+> While Markdown is great, sometimes you need more structure and type safety.
+> XMD provides that while staying simple and extensible.
+> {Steve McConnell}
+
+## Key Features
+
+1. First-class TypeScript support
+2. Structured metadata
+3. Custom block types
+4. React component mapping
+
+![XMD Parsing Flow](/images/blog/xmd-flow.jpg){A diagram showing the XMD parsing flow}
+
+---
+
+## What's Next?
+
+I'm planning to add more features to XMD:
+
+- Nested blocks
+- Custom components
+- Better error handling
+- Performance optimizations
+
+Stay tuned for more updates!

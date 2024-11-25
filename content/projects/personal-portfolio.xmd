@@ -1,0 +1,58 @@
+---
+title: Personal Portfolio
+description: A modern, minimalist portfolio site built with Next.js, TypeScript, and Tailwind CSS, featuring a custom XMD content management system.
+status: completed
+featured: true
+image: /images/projects/portfolio.jpg
+tags:
+  - Next.js
+  - TypeScript
+  - Tailwind CSS
+  - XMD
+github: https://github.com/yourusername/portfolio-site
+demo: https://your-portfolio.com
+---
+
+# The Vision
+
+Created a personal portfolio that reflects my journey as a builder and creator. The site combines modern web technologies with a custom content management system to deliver a seamless, performant experience.
+
+# Technical Stack
+
+## Frontend
+- Next.js 14 for server-side rendering and routing
+- TypeScript for type safety
+- Tailwind CSS for styling
+- Three.js for interactive 3D elements
+
+## Content Management
+- Custom XMD (eXtensible Markdown) format
+- File-based content organization
+- Type-safe content parsing
+- Dynamic content loading
+
+## Performance
+- Server components for optimal rendering
+- Image optimization with next/image
+- Responsive design principles
+- Dark mode support
+
+# Key Features
+
+## Content Management
+- Blog posts with rich formatting
+- Project showcases with images
+- Essays with categorization
+- Dynamic content previews
+
+## Design
+- Minimalist aesthetic
+- Smooth animations
+- Responsive layouts
+- Accessibility focus
+
+## Development
+- Type-safe components
+- Modular architecture
+- Clean code practices
+- Performance optimization
