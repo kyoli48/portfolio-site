@@ -123,6 +123,62 @@ When a user visits a page (e.g., `/projects/personal-portfolio`):
 4. Component renders the metadata and content blocks
 5. Result is displayed to the user
 
+## Animation System
+
+The site uses a combination of Framer Motion and CSS animations for smooth, performant interactions.
+
+### Framer Motion Animations
+
+Framer Motion is used for complex, orchestrated animations. Example from the hero section:
+
+```typescript
+// Background fade-in
+<motion.div 
+  initial={{ opacity: 0 }}
+  animate={{ opacity: 1 }}
+  transition={{ duration: 1 }}
+>
+
+// Content scale and fade
+<motion.div 
+  initial={{ scale: 0.95, opacity: 0 }}
+  animate={{ scale: 1, opacity: 1 }}
+  transition={{ duration: 0.8, ease: "easeOut" }}
+>
+```
+
+Key animation patterns:
+1. **Staggered Reveal**: Elements appear in sequence using `delay` in transition
+2. **Scale + Fade**: Combines scale and opacity for more engaging entrances
+3. **Smooth Transforms**: Uses `easeOut` easing for natural motion
+
+### CSS Animations
+
+CSS animations are used for continuous or simple effects:
+
+```css
+.bg-grid-pattern {
+  animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+```
+
+Common uses:
+1. **Background Effects**: Subtle patterns and gradients
+2. **Hover States**: Interactive elements feedback
+3. **Continuous Motion**: Infinite animations like pulses or bounces
+
+### Animation Principles
+
+1. **Progressive Enhancement**: Animations don't block content visibility
+2. **Performance First**: Using CSS transforms and opacity for smooth performance
+3. **Purposeful Motion**: Animations guide attention and provide feedback
+4. **Reduced Motion**: Respects user preferences for reduced motion
+
 ## Benefits
 
 This architecture provides several advantages:
