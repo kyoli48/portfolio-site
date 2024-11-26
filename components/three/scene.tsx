@@ -70,21 +70,33 @@ class World {
 }
 
 const createEarthObject = async (): Promise<WorldObject> => {
+  // Preload textures before scene initialization
   const textureLoader = new THREE.TextureLoader();
+  textureLoader.crossOrigin = '';  // Enable CORS
+  
+  // Create a low-res placeholder sphere while loading
+  const tempGeometry = new THREE.SphereGeometry(1, 16, 16);
+  const tempMaterial = new THREE.MeshBasicMaterial({ color: 0x1a237e });
+  const tempSphere = new THREE.Mesh(tempGeometry, tempMaterial);
+  
+  const group = new THREE.Group();
+  group.add(tempSphere);
   
   try {
-    // Load both day and night textures
+    // Load textures in parallel with reduced initial quality
     const [dayTexture, nightTexture] = await Promise.all([
       textureLoader.loadAsync('textures/earth-day.jpg'),
       textureLoader.loadAsync('textures/earth-night.jpg')
     ]);
-
-    const group = new THREE.Group();
-
-    // Earth geometry (reused)
-    const earthGeometry = new THREE.SphereGeometry(1, 64, 64);
     
-    // Custom shader material with day/night cycle
+    // Apply texture settings for better performance
+    dayTexture.generateMipmaps = true;
+    nightTexture.generateMipmaps = true;
+    dayTexture.minFilter = THREE.LinearMipmapLinearFilter;
+    nightTexture.minFilter = THREE.LinearMipmapLinearFilter;
+    
+    // Create the high-quality earth once textures are loaded
+    const earthGeometry = new THREE.SphereGeometry(1, 64, 64);
     const earthMaterial = new THREE.ShaderMaterial({
       uniforms: {
         dayTexture: { value: dayTexture },
@@ -115,6 +127,11 @@ const createEarthObject = async (): Promise<WorldObject> => {
     });
 
     const earth = new THREE.Mesh(earthGeometry, earthMaterial);
+    
+    // Replace the placeholder with the high-quality earth
+    group.remove(tempSphere);
+    tempGeometry.dispose();
+    tempMaterial.dispose();
     group.add(earth);
 
     // Atmosphere
@@ -320,10 +337,10 @@ const createConnectionLines = (locations: Location[]): WorldObject => {
   const lineMaterial = new THREE.ShaderMaterial({
     uniforms: {
       color: { value: new THREE.Color(0x00e5ff) },
-      glowIntensity: { value: 2.0 },
-      opacity: { value: 0.9 },
+      glowIntensity: { value: 5.0 },
+      opacity: { value: 1.0 },
       coreIntensity: { value: 5.0 },    // Control core brightness
-      glowPower: { value: 3.0 }         // Control glow falloff
+      glowPower: { value: 5.0 }         // Control glow falloff
     },
     vertexShader: `
       varying vec3 vPosition;
@@ -391,7 +408,7 @@ const createConnectionLines = (locations: Location[]): WorldObject => {
     const tubeGeometry = new THREE.TubeGeometry(
       curve,
       64,  // tubularSegments - number of segments along the tube
-      0.016,  // radius - thickness of the tube
+      0.008,  // radius - thickness of the tube
       8,    // radialSegments - number of segments around the tube
       false  // closed
     );
@@ -437,147 +454,151 @@ const ThreeScene: React.FC = () => {
     world: World;
     sceneState: SceneState;
     animationFrameId: number;
+    handleResize?: () => void;
   } | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (typeof window === 'undefined' || !containerRef.current) return;
-
-    const sceneState: SceneState = {
-      scene: new THREE.Scene(),
-      clock: new THREE.Clock(),
-      camera: new THREE.PerspectiveCamera(),
-      renderer: new THREE.WebGLRenderer(),
-      controls: {} as OrbitControls
-    };
+    let mounted = true;
+    let cleanup: (() => void) | undefined;
 
     const initScene = async () => {
-      // Cleanup any existing content
-      while (containerRef.current.firstChild) {
-        containerRef.current.removeChild(containerRef.current.firstChild);
-      }
+      if (typeof window === 'undefined' || !containerRef.current) return;
 
-      // Setup camera
-      const containerWidth = containerRef.current.clientWidth;
-      const containerHeight = window.innerHeight;
-      
-      sceneState.camera = new THREE.PerspectiveCamera(45, containerWidth / containerHeight, 0.1, 1000);
-      sceneState.camera.position.z = 4;
-      
-      // Renderer setup
-      sceneState.renderer = new THREE.WebGLRenderer({ 
-        alpha: true,
-        antialias: true,
-        powerPreference: 'high-performance'
-      });
-      sceneState.renderer.setSize(containerWidth, containerHeight);
-      sceneState.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      
-      containerRef.current.appendChild(sceneState.renderer.domElement);
+      try {
+        // Clear any existing error
+        setError(null);
 
-      // Orbit controls
-      sceneState.controls = new OrbitControls(sceneState.camera, sceneState.renderer.domElement);
-      sceneState.controls.enableDamping = true;
-      sceneState.controls.dampingFactor = 0.05;
-
-      // Lighting
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-      const pointLight = new THREE.PointLight(0xffffff, 1);
-      pointLight.position.set(5, 3, 5);
-      
-      sceneState.scene.add(ambientLight, pointLight);
-
-      // Create world and add earth
-      const world = new World(sceneState);
-      const earth = await createEarthObject();
-      world.addObject(earth);
-
-      // Resize handler
-      const handleResize = () => {
-        if (!containerRef.current) return;
-
-        const newWidth = containerRef.current.clientWidth;
-        const newHeight = window.innerHeight;
-        
-        sceneState.camera.aspect = newWidth / newHeight;
-        sceneState.camera.updateProjectionMatrix();
-        sceneState.renderer.setSize(newWidth, newHeight);
-      };
-
-      // Animation loop
-      let totalTime = 0;
-      const animate = () => {
-        const animationFrameId = requestAnimationFrame(animate);
-        
-        const delta = sceneState.clock.getDelta();
-        totalTime += delta;
-        
-        world.update(delta, totalTime);
-        sceneState.controls.update();
-        sceneState.renderer.render(sceneState.scene, sceneState.camera);
-
-        // Store references for cleanup
-        sceneRef.current = { 
-          world, 
-          sceneState, 
-          animationFrameId 
+        const sceneState: SceneState = {
+          scene: new THREE.Scene(),
+          clock: new THREE.Clock(),
+          camera: new THREE.PerspectiveCamera(),
+          renderer: new THREE.WebGLRenderer({
+            alpha: true,
+            antialias: true,
+            powerPreference: 'high-performance'
+          }),
+          controls: {} as OrbitControls
         };
-      };
 
-      // Add resize listener
-      window.addEventListener('resize', handleResize);
+        // Setup camera
+        const containerWidth = containerRef.current.clientWidth;
+        const containerHeight = window.innerHeight;
+        
+        sceneState.camera = new THREE.PerspectiveCamera(45, containerWidth / containerHeight, 0.1, 1000);
+        sceneState.camera.position.z = 4;
 
-      // Start animation
-      animate();
-      setIsLoaded(true);
+        // Setup renderer
+        sceneState.renderer.setSize(containerWidth, containerHeight);
+        sceneState.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        
+        // Clean up any existing canvas
+        while (containerRef.current?.firstChild) {
+          containerRef.current.removeChild(containerRef.current.firstChild);
+        }
+        
+        containerRef.current.appendChild(sceneState.renderer.domElement);
 
-      return { world, sceneState, handleResize };
+        // Setup controls
+        sceneState.controls = new OrbitControls(sceneState.camera, sceneState.renderer.domElement);
+        sceneState.controls.enableDamping = true;
+        sceneState.controls.dampingFactor = 0.05;
+
+        // Create world
+        const world = new World(sceneState);
+
+        // Setup resize handler
+        const handleResize = () => {
+          if (!containerRef.current) return;
+          
+          const newWidth = containerRef.current.clientWidth;
+          const newHeight = window.innerHeight;
+          
+          sceneState.camera.aspect = newWidth / newHeight;
+          sceneState.camera.updateProjectionMatrix();
+          sceneState.renderer.setSize(newWidth, newHeight);
+        };
+
+        window.addEventListener('resize', handleResize);
+
+        // Animation loop
+        let totalTime = 0;
+        let animationFrameId: number;
+
+        const animate = () => {
+          if (!mounted) return;
+          
+          animationFrameId = requestAnimationFrame(animate);
+          
+          const delta = sceneState.clock.getDelta();
+          totalTime += delta;
+          
+          world.update(delta, totalTime);
+          sceneState.controls.update();
+          sceneState.renderer.render(sceneState.scene, sceneState.camera);
+        };
+
+        // Create earth object
+        const earth = await createEarthObject();
+        world.addObject(earth);
+
+        // Store cleanup function
+        cleanup = () => {
+          mounted = false;
+          window.removeEventListener('resize', handleResize);
+          cancelAnimationFrame(animationFrameId);
+          
+          world.dispose();
+          sceneState.renderer.dispose();
+          sceneState.scene.clear();
+          
+          if (containerRef.current) {
+            containerRef.current.innerHTML = '';
+          }
+        };
+
+        // Store references and start animation
+        sceneRef.current = {
+          world,
+          sceneState,
+          animationFrameId,
+          handleResize
+        };
+
+        // Start animation loop
+        animate();
+
+        // Set loaded state
+        if (mounted) {
+          setIsLoaded(true);
+        }
+      } catch (err) {
+        console.error('Error initializing scene:', err);
+        setError(err instanceof Error ? err.message : 'Failed to initialize scene');
+        if (cleanup) cleanup();
+      }
     };
 
     // Initialize scene
-    const scenePromise = initScene();
+    initScene();
 
-    // Cleanup function
+    // Cleanup on unmount
     return () => {
-      // Stop resize listener
-      window.removeEventListener('resize', sceneRef.current?.handleResize);
-
-      // Cancel animation frame
-      if (sceneRef.current?.animationFrameId) {
-        cancelAnimationFrame(sceneRef.current.animationFrameId);
-      }
-
-      // Dispose of Three.js resources
-      if (sceneRef.current) {
-        // Dispose of world objects
-        sceneRef.current.world.dispose();
-
-        // Dispose of renderer
-        const renderer = sceneRef.current.sceneState.renderer;
-        renderer.dispose();
-
-        // Clear scene
-        const scene = sceneRef.current.sceneState.scene;
-        scene.clear();
-      }
-
-      // Clear container
-      if (containerRef.current) {
-        containerRef.current.innerHTML = '';
-      }
-
-      // Reset references
+      if (cleanup) cleanup();
       sceneRef.current = null;
     };
   }, []);
 
-  return (
-    <div 
-      ref={containerRef} 
-      className={`fixed top-0 right-0 h-screen w-1/2 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
-      style={{ transition: 'opacity 0.5s ease-in-out' }}
-    />
-  );
+  if (error) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <p className="text-red-500">Error: {error}</p>
+      </div>
+    );
+  }
+
+  return <div ref={containerRef} className="w-full h-full" />;
 };
 
 export default ThreeScene;

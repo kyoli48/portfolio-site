@@ -1,5 +1,4 @@
-'use server'
-
+import { Suspense } from 'react'
 import { AboutSection } from '@/components/about/about-section'
 import { ProjectsPreview } from '@/components/shared/projects-preview'
 import { ContentPreview } from '@/components/shared/content-preview'
@@ -20,7 +19,9 @@ export default async function Home() {
       <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row">
         {/* Main Content */}
         <main className="w-full md:w-1/2">
-          <Hero />
+          <Suspense fallback={null}>
+            <Hero />
+          </Suspense>
           <AboutSection />
           <ProjectsPreview projects={projects} />
           <ContentPreview 
@@ -39,7 +40,9 @@ export default async function Home() {
         </main>
 
         {/* Three.js Scene */}
-        <ThreeSceneWrapper />
+        <Suspense fallback={null}>
+          <ThreeSceneWrapper />
+        </Suspense>
       </div>
     </>
   )

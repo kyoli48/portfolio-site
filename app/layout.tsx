@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { ThemeProvider } from '@/components/layout/theme-provider'
 import type { Metadata } from "next";
 import localFont from "next/font/local";
@@ -36,8 +37,11 @@ export default function RootLayout({
           attribute="class"
           defaultTheme="dark"
           enableSystem={true}
+          disableTransitionOnChange
         >
-          <Navbar />
+          <Suspense fallback={null}>
+            <Navbar />
+          </Suspense>
           {children}
         </ThemeProvider>
       </body>
