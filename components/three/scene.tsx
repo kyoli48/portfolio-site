@@ -164,6 +164,10 @@ const createEarthObject = async (): Promise<WorldObject> => {
       group.add(marker.mesh);
     });
 
+    // Add connection lines
+    const connectionLines = createConnectionLines(visitedLocations);
+    group.add(connectionLines.mesh);
+
     const earthObject: WorldObject = {
       mesh: group,
       update: (delta: number, time: number) => {
@@ -177,8 +181,9 @@ const createEarthObject = async (): Promise<WorldObject> => {
         (earthMaterial.uniforms.mixRatio.value as number) = cyclePosition;
         (atmosphereMaterial.uniforms.mixRatio.value as number) = cyclePosition;
 
-        // Update all markers
+        // Update all markers and connection lines
         markers.forEach(marker => marker.update(delta, time));
+        connectionLines.update(delta, time);
       },
       dispose: () => {
         // Specific disposal for this object
@@ -190,6 +195,7 @@ const createEarthObject = async (): Promise<WorldObject> => {
         atmosphereMaterial.dispose();
 
         markers.forEach(marker => marker.dispose());
+        connectionLines.dispose();
       }
     };
 
@@ -252,10 +258,32 @@ const createLocationMarker = (location: Location): WorldObject => {
   canvas.width = 256;
   canvas.height = 64;
   if (context) {
-    context.font = 'bold 32px GeistSans';
+    context.font = 'bold 28px GeistSans';
+    
+    // Measure text width to size the background
+    const textMetrics = context.measureText(location.name);
+    const padding = 16;
+    const rectWidth = textMetrics.width + padding * 2;
+    const rectHeight = 40;
+    const cornerRadius = 8;
+    
+    // Draw rounded rectangle background
+    context.fillStyle = 'rgba(0, 0, 0, 0.2)';
+    context.beginPath();
+    context.roundRect(
+      (canvas.width - rectWidth) / 2,
+      (canvas.height - rectHeight) / 2,
+      rectWidth,
+      rectHeight,
+      cornerRadius
+    );
+    context.fill();
+    
+    // Draw text
     context.fillStyle = 'white';
     context.textAlign = 'center';
-    context.fillText(location.name, 128, 32);
+    context.textBaseline = 'middle';
+    context.fillText(location.name, canvas.width / 2, canvas.height / 2);
   }
   
   const labelTexture = new THREE.CanvasTexture(canvas);
@@ -283,6 +311,124 @@ const createLocationMarker = (location: Location): WorldObject => {
       labelTexture.dispose();
     }
   };
+};
+
+const createConnectionLines = (locations: Location[]): WorldObject => {
+  const group = new THREE.Group();
+  
+  // Custom shader material for glowing effect
+  const lineMaterial = new THREE.ShaderMaterial({
+    uniforms: {
+      color: { value: new THREE.Color(0x00e5ff) },
+      glowIntensity: { value: 2.0 },
+      opacity: { value: 0.9 },
+      coreIntensity: { value: 5.0 },    // Control core brightness
+      glowPower: { value: 3.0 }         // Control glow falloff
+    },
+    vertexShader: `
+      varying vec3 vPosition;
+      varying vec2 vUv;
+      void main() {
+        vPosition = position;
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform vec3 color;
+      uniform float glowIntensity;
+      uniform float opacity;
+      uniform float coreIntensity;
+      uniform float glowPower;
+      varying vec2 vUv;
+      
+      void main() {
+        float radius = length(vUv - vec2(0.5));
+        
+        // Brighter core with adjustable intensity
+        float core = smoothstep(0.5, 0.0, radius) * coreIntensity;
+        
+        // Adjustable glow falloff
+        float glow = pow(1.0 - radius, glowPower);
+        
+        vec3 finalColor = color * (core + glow) * glowIntensity;
+        
+        vec3 hotBlue = vec3(0.0, 0.5, 1.0);
+        finalColor += hotBlue * (1.0 - radius) * 0.7;
+        
+        float alpha = (core + glow) * opacity;
+        
+        gl_FragColor = vec4(finalColor, alpha);
+      }
+    `,
+    transparent: true,
+    blending: THREE.AdditiveBlending,
+    side: THREE.FrontSide,
+    depthWrite: false
+  });
+
+  // Create curved lines between consecutive points
+  for (let i = 0; i < locations.length; i++) {
+    const startLoc = locations[i];
+    const endLoc = locations[(i + 1) % locations.length];
+    
+    // Convert lat/long to 3D positions
+    const startPos = latLongToVector3(startLoc.coordinates[0], startLoc.coordinates[1], 1.02);
+    const endPos = latLongToVector3(endLoc.coordinates[0], endLoc.coordinates[1], 1.02);
+    
+    // Calculate midpoint and raise it above the surface for curve
+    const midPoint = startPos.clone().add(endPos).multiplyScalar(0.5);
+    midPoint.normalize().multiplyScalar(2.0);
+    
+    // Create curved path
+    const curve = new THREE.QuadraticBezierCurve3(
+      startPos,
+      midPoint,
+      endPos
+    );
+    
+    // Create tube geometry around the curve
+    const tubeGeometry = new THREE.TubeGeometry(
+      curve,
+      64,  // tubularSegments - number of segments along the tube
+      0.016,  // radius - thickness of the tube
+      8,    // radialSegments - number of segments around the tube
+      false  // closed
+    );
+    
+    // Create tube mesh with custom material
+    const tube = new THREE.Mesh(tubeGeometry, lineMaterial);
+    group.add(tube);
+  }
+  
+  return {
+    mesh: group,
+    update: (delta: number, time: number) => {
+      // Animate glow intensity
+      const intensity = 1.5 + Math.sin(time * 2) * 0.5;
+      lineMaterial.uniforms.glowIntensity.value = intensity;
+    },
+    dispose: () => {
+      group.children.forEach(child => {
+        if (child instanceof THREE.Mesh) {
+          child.geometry.dispose();
+        }
+      });
+      lineMaterial.dispose();
+    }
+  };
+};
+
+// Helper function to convert lat/long to 3D vector
+const latLongToVector3 = (lat: number, long: number, radius: number): THREE.Vector3 => {
+  const phi = (90 - lat) * (Math.PI / 180);
+  const theta = (long + 180) * (Math.PI / 180);
+  
+  return new THREE.Vector3(
+    -radius * Math.sin(phi) * Math.cos(theta),
+    radius * Math.cos(phi),
+    radius * Math.sin(phi) * Math.sin(theta)
+  );
 };
 
 const ThreeScene: React.FC = () => {
