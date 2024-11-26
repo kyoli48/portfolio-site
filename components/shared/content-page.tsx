@@ -2,7 +2,7 @@
 
 import { XMDDocument } from '@/types/xmd'
 import { notFound } from 'next/navigation'
-import { format } from 'date-fns'
+import { format, parseISO } from 'date-fns'
 import Image from 'next/image'
 import { ArrowLeft, Clock, Calendar, BookOpen } from 'lucide-react'
 import Link from 'next/link'
@@ -21,6 +21,10 @@ export function ContentPage({ type, content }: ContentPageProps) {
   const { metadata } = content
   const backLink = type === 'blog' ? '/blog' : '/essays'
   const backText = type === 'blog' ? 'Back to Blog' : 'Back to Essays'
+  
+  // Parse date once and format it
+  const date = parseISO(metadata.date)
+  const formattedDate = format(date, 'MMMM d, yyyy')
 
   return (
     <main className="container py-24 px-4 md:px-6">
@@ -60,9 +64,7 @@ export function ContentPage({ type, content }: ContentPageProps) {
             {/* Date */}
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
-              <time dateTime={metadata.date}>
-                {format(new Date(metadata.date), 'MMMM d, yyyy')}
-              </time>
+              <time dateTime={metadata.date}>{formattedDate}</time>
             </div>
 
             {/* Reading Time (Essays Only) */}

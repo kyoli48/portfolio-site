@@ -1,7 +1,20 @@
-import { XMDDocument, XMDBlock, XMDMetadata, BlogXMDMetadata, EssayXMDMetadata, ProjectXMDMetadata } from '@/types/xmd'
+import { XMDDocument, XMDBlock, XMDMetadata, BlogXMDMetadata, EssayXMDMetadata, ProjectXMDMetadata, BaseXMDMetadata } from '@/types/xmd'
 import { calculateReadingTime, calculateWordCount } from './utils/content'
 
-function validateMetadata(metadata: any, type: 'blog' | 'essays' | 'projects'): XMDMetadata {
+type RawMetadata = Partial<BaseXMDMetadata> & {
+  date?: string
+  category?: string
+  status?: 'completed' | 'in-progress' | 'active'
+  color?: string
+  github?: string
+  demo?: string
+  readingTime?: string | number
+  wordCount?: string | number
+  draft?: string | boolean
+  featured?: string | boolean
+}
+
+function validateMetadata(metadata: RawMetadata, type: 'blog' | 'essays' | 'projects'): XMDMetadata {
   // Validate base metadata
   if (!metadata.title || !metadata.description) {
     throw new Error('Required base metadata fields missing (title, description)')
@@ -14,7 +27,7 @@ function validateMetadata(metadata: any, type: 'blog' | 'essays' | 'projects'): 
       metadata.tags = metadata.tags.split(',').map((tag: string) => tag.trim())
     } else if (Array.isArray(metadata.tags)) {
       // Handle YAML array format (already an array)
-      metadata.tags = metadata.tags.map((tag: any) => String(tag).trim())
+      metadata.tags = metadata.tags.map((tag: string) => String(tag).trim())
     } else {
       // Invalid format
       delete metadata.tags
@@ -58,7 +71,7 @@ function validateMetadata(metadata: any, type: 'blog' | 'essays' | 'projects'): 
       return metadata as ProjectXMDMetadata
     
     default:
-      throw new Error(`Unknown content type: ${type}`)
+      throw new Error('Invalid content type')
   }
 }
 
@@ -72,7 +85,7 @@ export function parseXMD(content: string, type: 'blog' | 'essays' | 'projects'):
   }
   currentLine++
   
-  const metadata: Record<string, any> = {}
+  const metadata: RawMetadata = {}
   let inTagsBlock = false
 
   while (currentLine < lines.length && lines[currentLine] !== '---') {

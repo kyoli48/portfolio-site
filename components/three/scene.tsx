@@ -316,7 +316,7 @@ const createLocationMarker = (location: Location): WorldObject => {
   
   return {
     mesh: group,
-    update: (delta: number, time: number) => {
+    update: (_delta: number, _time: number) => {
       // Keep text facing camera
       label.quaternion.copy(group.parent!.quaternion);
     },
@@ -456,7 +456,6 @@ const ThreeScene: React.FC = () => {
     animationFrameId: number;
     handleResize?: () => void;
   } | null>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -569,10 +568,6 @@ const ThreeScene: React.FC = () => {
         // Start animation loop
         animate();
 
-        // Set loaded state
-        if (mounted) {
-          setIsLoaded(true);
-        }
       } catch (err) {
         console.error('Error initializing scene:', err);
         setError(err instanceof Error ? err.message : 'Failed to initialize scene');

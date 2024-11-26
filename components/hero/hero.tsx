@@ -1,7 +1,6 @@
 'use client'
 
 import { ChevronDown } from 'lucide-react'
-import dynamic from 'next/dynamic'
 import { LazyMotion, domAnimation, m } from 'framer-motion'
 import { useEffect, useState } from 'react'
 

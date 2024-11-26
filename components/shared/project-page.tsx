@@ -1,7 +1,7 @@
 'use client'
 
 import { XMDDocument } from '@/types/xmd'
-import { Github, ExternalLink, Calendar } from 'lucide-react'
+import { Github, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { CodeBlock } from './code-block'

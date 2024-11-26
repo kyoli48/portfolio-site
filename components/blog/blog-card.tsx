@@ -4,7 +4,6 @@ import { XMDDocument } from '@/types/xmd'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Clock } from 'lucide-react'
-import { cn } from '@/lib/utils'
 
 type BlogCardProps = {
   content: XMDDocument & { slug: string }
