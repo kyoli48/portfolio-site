@@ -17,8 +17,8 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Alphonsus Koong - Portfolio",
-  description: "Personal portfolio of Alphonsus Koong - Builder, Entrepreneur, Explorer",
+  title: "Alphonsus Koong",
+  description: "Personal website",
   keywords: ["portfolio", "software engineer", "entrepreneur", "writer"],
   authors: [{ name: "Alphonsus Koong" }],
 };

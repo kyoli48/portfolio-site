@@ -242,6 +242,10 @@ export function parseXMD(content: string, type: 'blog' | 'essays' | 'projects'):
       } else {
         currentBlock.content += ' ' + line.trim()
       }
+    } else if (currentBlock) {
+      // Empty line - end current paragraph block
+      blocks.push(currentBlock as XMDBlock)
+      currentBlock = null
     }
     
     currentLine++
