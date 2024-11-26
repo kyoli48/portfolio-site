@@ -17,6 +17,8 @@
     "@types/three": "^0.170.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
+    "d3": "^7.9.0",
+    "d3-geo": "^3.1.1",
     "dat.gui": "^0.7.9",
     "date-fns": "^4.1.0",
     "framer-motion": "^11.11.17",

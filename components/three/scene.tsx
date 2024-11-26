@@ -155,18 +155,30 @@ const createEarthObject = async (): Promise<WorldObject> => {
     atmosphere.scale.set(1.1, 1.1, 1.1);
     group.add(atmosphere);
 
-    return {
+    const markers: WorldObject[] = [];
+
+    // Create markers for each location
+    visitedLocations.forEach(location => {
+      const marker = createLocationMarker(location);
+      markers.push(marker);
+      group.add(marker.mesh);
+    });
+
+    const earthObject: WorldObject = {
       mesh: group,
       update: (delta: number, time: number) => {
         // Rotate the earth
-        earth.rotation.y += delta * 0.1;
+        group.rotation.y += delta * 0.05;
 
         // Day/night cycle 
-        const cyclePosition = (Math.sin(time * 0.5) + 1) / 2;
+        const cyclePosition = (Math.sin(time * 0.2) + 1) / 2;
 
         // Update day/night mix in materials
         (earthMaterial.uniforms.mixRatio.value as number) = cyclePosition;
         (atmosphereMaterial.uniforms.mixRatio.value as number) = cyclePosition;
+
+        // Update all markers
+        markers.forEach(marker => marker.update(delta, time));
       },
       dispose: () => {
         // Specific disposal for this object
@@ -176,12 +188,101 @@ const createEarthObject = async (): Promise<WorldObject> => {
         atmosphereGeometry.dispose();
         earthMaterial.dispose();
         atmosphereMaterial.dispose();
+
+        markers.forEach(marker => marker.dispose());
       }
     };
+
+    return earthObject;
   } catch (error) {
     console.error('Texture loading failed', error);
     throw error;
   }
+};
+
+import { visitedLocations, Location } from './locations';
+
+const createLocationMarker = (location: Location): WorldObject => {
+  const group = new THREE.Group();
+  
+  // Create pin geometry with larger dimensions
+  const pinHeight = 0.12;
+  const pinHeadRadius = 0.028;
+  const pinStemRadius = 0.008;
+  
+  // Create pin head (sphere)
+  const headGeometry = new THREE.SphereGeometry(pinHeadRadius, 16, 16);
+  const pinMaterial = new THREE.MeshPhongMaterial({ 
+    color: 0xff3333,
+    shininess: 100,
+    emissive: 0x331111
+  });
+  const pinHead = new THREE.Mesh(headGeometry, pinMaterial);
+  pinHead.position.y = pinHeight; // Head at the tip
+
+  // Create pin stem (cylinder)
+  const stemGeometry = new THREE.CylinderGeometry(pinStemRadius, 0, pinHeight, 8);
+  const stem = new THREE.Mesh(stemGeometry, pinMaterial);
+  stem.position.y = pinHeight / 2;
+
+  const pin = new THREE.Group();
+  pin.add(pinHead);
+  pin.add(stem);
+  
+  // Convert lat/long to 3D position
+  const [lat, lon] = location.coordinates;
+  const phi = (90 - lat) * (Math.PI / 180);
+  const theta = (lon + 180) * (Math.PI / 180);
+  const radius = 1.02;
+  
+  const x = -radius * Math.sin(phi) * Math.cos(theta);
+  const y = radius * Math.cos(phi);
+  const z = radius * Math.sin(phi) * Math.sin(theta);
+  
+  group.position.set(x, y, z);
+  
+  // Orient pin to point outward from globe center
+  pin.lookAt(0, 0, 0);
+  // No need to rotate X anymore since pin is already in correct orientation
+  group.add(pin);
+  
+  // Create text label
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d');
+  canvas.width = 256;
+  canvas.height = 64;
+  if (context) {
+    context.font = 'bold 32px GeistSans';
+    context.fillStyle = 'white';
+    context.textAlign = 'center';
+    context.fillText(location.name, 128, 32);
+  }
+  
+  const labelTexture = new THREE.CanvasTexture(canvas);
+  const labelMaterial = new THREE.SpriteMaterial({
+    map: labelTexture,
+    sizeAttenuation: false,
+  });
+  
+  const label = new THREE.Sprite(labelMaterial);
+  label.scale.set(0.15, 0.04, 1);
+  label.position.y = pinHeight + 0.05;
+  group.add(label);
+  
+  return {
+    mesh: group,
+    update: (delta: number, time: number) => {
+      // Keep text facing camera
+      label.quaternion.copy(group.parent!.quaternion);
+    },
+    dispose: () => {
+      headGeometry.dispose();
+      stemGeometry.dispose();
+      pinMaterial.dispose();
+      labelMaterial.dispose();
+      labelTexture.dispose();
+    }
+  };
 };
 
 const ThreeScene: React.FC = () => {
