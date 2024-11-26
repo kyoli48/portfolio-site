@@ -1,16 +1,16 @@
 ---
 title: Personal Portfolio
 description: A modern, minimalist portfolio site built with Next.js, TypeScript, and Tailwind CSS, featuring a custom XMD content management system.
-status: completed
-featured: true
+status: in-progress
+featured: false
 image: /images/projects/portfolio.jpg
 tags:
   - Next.js
   - TypeScript
   - Tailwind CSS
   - XMD
-github: https://github.com/yourusername/portfolio-site
-demo: https://your-portfolio.com
+github: https://github.com/kyoli48/portfolio-site
+demo: https://kyoli48.me
 ---
 
 # The Vision
@@ -20,7 +20,7 @@ Created a personal portfolio that reflects my journey as a builder and creator. 
 # Technical Stack
 
 ## Frontend
-- Next.js 14 for server-side rendering and routing
+- Next.js 15 for server-side rendering and routing
 - TypeScript for type safety
 - Tailwind CSS for styling
 - Three.js for interactive 3D elements

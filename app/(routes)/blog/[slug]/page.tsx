@@ -1,14 +1,26 @@
 import { getContentBySlug } from '@/app/api/content'
 import { ContentPage } from '@/components/shared/content-page'
 
-interface PageProps {
+interface GenerateMetadataProps {
   params: { slug: string }
-  searchParams: Record<string, string | string[] | undefined>
 }
 
-export default async function BlogPostPage({ params }: PageProps) {
+export async function generateMetadata({ params }: GenerateMetadataProps) {
   const post = await getContentBySlug('blog', params.slug)
+  if (!post) return {}
   
+  return {
+    title: post.metadata.title,
+    description: post.metadata.description,
+  }
+}
+
+export default async function BlogPostPage({
+  params,
+}: {
+  params: { slug: string }
+}) {
+  const post = await getContentBySlug('blog', params.slug)
   if (!post) return null
   
   // Ensure date is serialized properly

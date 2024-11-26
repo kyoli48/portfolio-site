@@ -80,6 +80,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
                   title="Visit live demo"
                   onClick={(e) => e.stopPropagation()}
                 >
+                  Link
                   <ExternalLink className="h-5 w-5" />
                 </Link>
               )}

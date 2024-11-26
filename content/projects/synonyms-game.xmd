@@ -1,0 +1,39 @@
+---
+title: Synonyms
+description: A fast-paced, brain-teasing word association game designed to test and expand your vocabulary.
+status: completed
+featured: true
+image: /images/projects/synonyms-game.png
+tags:
+  - Game Development
+  - API Integration
+  - Frontend Design
+color: from-blue-500/10 to-purple-500/10
+github: https://github.com/kyoli48/synonyms-word-game
+demo: https://synonyms.kyoli48.me/
+---
+
+# The Motivation
+
+Born out of a frustration with my shrinking vocabulary, I built *Synonyms* as a word association game that challenges players to think quickly, make connections, and expand their lexicon. Designed and developed as a solo project to satisfy a personal need, I aimed to merge fun with learning through simple game mechanics and a visually-appealing interface.
+
+# The Journey
+
+## Crafting the Experience
+- Designed a clean and intuitive user interface with responsive web design principles.
+- Implemented a timer-based gameplay mechanic to create high-stakes engagement.
+- Developed scoring logic that rewards players for finding multiple synonyms per word.
+
+## Building the Game
+- Built using **Next.js and TypeScript** with modular, maintainable code.
+- Utilized **GitHub Pages** for deployment and **Git** for version control.
+- Incorporated a custom dictionary API to enhance word recognition and expand gameplay possibilities.
+
+## Enhancing the Fun
+- Added animations and transitions to create a smooth user experience.
+- Designed a scoring multiplier to encourage creative thinking and high performance.
+- Tested extensively to ensure the game was bug-free and intuitive to play.
+
+# The Impact
+
+*Synonyms* has quickly become one of my favorite undertakings. This project taught me the importance of balancing functionality and user experience while honing my skills in web development and game design.
