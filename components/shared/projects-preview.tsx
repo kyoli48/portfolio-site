@@ -44,15 +44,12 @@ export function ProjectsPreview({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {featuredProjects.map((project) => {
-            console.log('Project metadata:', project.metadata) // Debug log
-            return (
-              <ProjectCard 
-                key={project.slug}
-                project={project}
-              />
-            )
-          })}
+          {featuredProjects.map((project) => (
+            <ProjectCard 
+              key={project.slug}
+              project={project}
+            />
+          ))}
         </div>
       </div>
     </section>
