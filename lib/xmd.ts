@@ -12,6 +12,7 @@ type RawMetadata = Partial<BaseXMDMetadata> & {
   wordCount?: string | number
   draft?: string | boolean
   featured?: string | boolean
+  hide?: string | boolean
 }
 
 function validateMetadata(metadata: RawMetadata, type: 'blog' | 'essays' | 'projects'): XMDMetadata {
@@ -40,6 +41,9 @@ function validateMetadata(metadata: RawMetadata, type: 'blog' | 'essays' | 'proj
   }
   if (typeof metadata.draft === 'string') {
     metadata.draft = metadata.draft.toLowerCase() === 'true'
+  }
+  if (typeof metadata.hide === 'string') {
+    metadata.hide = metadata.hide.toLowerCase() === 'true'
   }
 
   // Convert numeric strings
@@ -180,21 +184,17 @@ export function parseXMD(content: string, type: 'blog' | 'essays' | 'projects'):
         language
       })
       currentBlock = null
-    } else if (line.startsWith('# ')) {
+    } else if (line.match(/^#{1,6}\s/)) {
+      // Headings (h1-h6)
       if (currentBlock) blocks.push(currentBlock as XMDBlock)
+      const level = line.match(/^(#{1,6})\s/)[1].length
       currentBlock = {
         type: 'heading',
-        level: 1,
-        content: line.slice(2).trim()
-      }
-    } else if (line.startsWith('## ')) {
-      if (currentBlock) blocks.push(currentBlock as XMDBlock)
-      currentBlock = {
-        type: 'heading',
-        level: 2,
-        content: line.slice(3).trim()
+        level,
+        content: line.slice(level + 1).trim()
       }
     } else if (line.startsWith('> ')) {
+      // Blockquotes
       if (currentBlock) blocks.push(currentBlock as XMDBlock)
       const match = line.match(/^> (.*?)(?:\s*{(.*)})?$/)
       if (match) {
@@ -205,7 +205,8 @@ export function parseXMD(content: string, type: 'blog' | 'essays' | 'projects'):
           caption
         }
       }
-    } else if (line.startsWith('- ')) {
+    } else if (line.startsWith('- ') || line.startsWith('* ')) {
+      // Unordered lists
       if (currentBlock?.type !== 'list' || currentBlock.ordered) {
         if (currentBlock) blocks.push(currentBlock as XMDBlock)
         currentBlock = {
@@ -214,8 +215,9 @@ export function parseXMD(content: string, type: 'blog' | 'essays' | 'projects'):
           items: []
         }
       }
-      currentBlock.items?.push(line.slice(2).trim())
+      currentBlock.items?.push(processInlineFormatting(line.slice(2).trim()))
     } else if (line.match(/^\d+\. /)) {
+      // Ordered lists
       if (currentBlock?.type !== 'list' || !currentBlock.ordered) {
         if (currentBlock) blocks.push(currentBlock as XMDBlock)
         currentBlock = {
@@ -224,8 +226,9 @@ export function parseXMD(content: string, type: 'blog' | 'essays' | 'projects'):
           items: []
         }
       }
-      currentBlock.items?.push(line.replace(/^\d+\. /, '').trim())
+      currentBlock.items?.push(processInlineFormatting(line.replace(/^\d+\. /, '').trim()))
     } else if (line.startsWith('---')) {
+      // Divider
       if (currentBlock) blocks.push(currentBlock as XMDBlock)
       blocks.push({
         type: 'divider',
@@ -233,14 +236,15 @@ export function parseXMD(content: string, type: 'blog' | 'essays' | 'projects'):
       })
       currentBlock = null
     } else if (line.trim()) {
+      // Paragraphs with inline formatting
       if (!currentBlock || currentBlock.type !== 'paragraph') {
         if (currentBlock) blocks.push(currentBlock as XMDBlock)
         currentBlock = {
           type: 'paragraph',
-          content: line.trim()
+          content: processInlineFormatting(line.trim())
         }
       } else {
-        currentBlock.content += ' ' + line.trim()
+        currentBlock.content += ' ' + processInlineFormatting(line.trim())
       }
     } else if (currentBlock) {
       // Empty line - end current paragraph block
@@ -265,4 +269,23 @@ export function parseXMD(content: string, type: 'blog' | 'essays' | 'projects'):
     metadata: validatedMetadata,
     content: blocks
   }
+}
+
+// Helper function for inline formatting
+function processInlineFormatting(text: string): string {
+  // Bold
+  text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+  text = text.replace(/__(.+?)__/g, '<strong>$1</strong>')
+  
+  // Italic
+  text = text.replace(/\*(.+?)\*/g, '<em>$1</em>')
+  text = text.replace(/_(.+?)_/g, '<em>$1</em>')
+  
+  // Strikethrough
+  text = text.replace(/~~(.+?)~~/g, '<del>$1</del>')
+  
+  // Inline code
+  text = text.replace(/`(.+?)`/g, '<code>$1</code>')
+  
+  return text
 }

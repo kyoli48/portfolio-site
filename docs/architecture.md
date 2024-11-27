@@ -15,8 +15,8 @@ All content is stored in `.xmd` files in the `/content` directory, organized by 
     south-china-sea.xmd
     ...
   /projects
-    personal-portfolio.xmd
-    dorm-room-boba-shop.xmd
+    555-tea.xmd
+    synonyms-game.xmd
     ...
 ```
 
@@ -29,7 +29,7 @@ Content loading is handled by `app/api/content.ts`:
 
 - `getContent()`: Gets all content of a specific type
   ```typescript
-  async function getContent(type: 'blog' | 'essays' | 'projects'): Promise<ContentWithSlug[]>
+  async function getContent(type: ContentType, includeHidden: boolean = false): Promise<ContentWithSlug[]>
   ```
 
 - `getContentBySlug()`: Gets a single piece of content by its slug
@@ -53,6 +53,31 @@ function parseXMD(content: string, type: 'blog' | 'essays' | 'projects'): XMDDoc
 }
 ```
 
+### XMD Parser Features
+
+The XMD parser supports:
+
+1. **Headings**
+   - All heading levels (h1-h6) using `#` to `######`
+
+2. **Inline Formatting**
+   - Bold: `**text**` or `__text__`
+   - Italic: `*text*` or `_text_`
+   - Strikethrough: `~~text~~`
+   - Inline code: `` `code` ``
+
+3. **Block Elements**
+   - Code blocks with language support
+   - Blockquotes with optional captions
+   - Ordered and unordered lists
+   - Images with alt text and captions
+   - Dividers
+
+4. **Metadata Controls**
+   - `featured`: Highlight content
+   - `hide`: Control visibility in listings
+   - `draft`: Mark content as draft (blog posts)
+
 ### Document Structure
 Each document is parsed into an `XMDDocument`:
 ```typescript
@@ -60,10 +85,14 @@ interface XMDDocument {
   metadata: {
     title: string
     description: string
+    tags?: string[]
+    image?: string
+    featured?: boolean
+    hide?: boolean // Control visibility in listings
     // Type-specific fields:
-    // - Blog: date, readingTime
-    // - Essays: date, category, readingTime
-    // - Projects: status, github?, demo?
+    // - Blog: date, readingTime, wordCount, draft
+    // - Essays: date, category, readingTime, wordCount
+    // - Projects: status, github?, demo?, color?
   }
   content: XMDBlock[]
 }
@@ -158,6 +187,17 @@ CSS animations are used for continuous or simple effects:
 
 ```css
 .bg-grid-pattern {
+  background-size: 50px 50px;
+  background-image: linear-gradient(
+    to right, 
+    rgb(255 255 255 / 0.1) 1px, 
+    transparent 1px
+  ),
+  linear-gradient(
+    to bottom, 
+    rgb(255 255 255 / 0.1) 1px, 
+    transparent 1px
+  );
   animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 

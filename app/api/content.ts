@@ -9,7 +9,7 @@ export type ContentWithSlug = XMDDocument & {
   slug: string
 }
 
-export async function getContent(type: ContentType): Promise<ContentWithSlug[]> {
+export async function getContent(type: ContentType, includeHidden: boolean = false): Promise<ContentWithSlug[]> {
   const contentDir = path.join(process.cwd(), 'content', type)
   
   try {
@@ -27,7 +27,12 @@ export async function getContent(type: ContentType): Promise<ContentWithSlug[]> 
       })
     )
     
-    return content.sort((a, b) => {
+    // Filter out hidden content unless explicitly requested
+    const visibleContent = includeHidden 
+      ? content 
+      : content.filter(item => !item.metadata.hide)
+    
+    return visibleContent.sort((a, b) => {
       if ('date' in a.metadata && 'date' in b.metadata) {
         return new Date(b.metadata.date).getTime() - new Date(a.metadata.date).getTime()
       }

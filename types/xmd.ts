@@ -4,6 +4,7 @@ export type BaseXMDMetadata = {
   tags?: string[]
   image?: string
   featured?: boolean
+  hide?: boolean
 }
 
 export type BlogXMDMetadata = BaseXMDMetadata & {
@@ -34,10 +35,10 @@ export type XMDMetadata = BlogXMDMetadata | EssayXMDMetadata | ProjectXMDMetadat
 
 export type XMDBlock = {
   type: 'paragraph' | 'heading' | 'code' | 'quote' | 'list' | 'image' | 'divider'
-  content: string
+  content: string // Now supports HTML tags for inline formatting
   level?: number // For headings (1-6)
   language?: string // For code blocks
-  items?: string[] // For lists
+  items?: string[] // For lists (now supports HTML tags for inline formatting)
   ordered?: boolean // For lists
   alt?: string // For images
   caption?: string // For images and quotes
