@@ -135,7 +135,7 @@ const createEarthObject = async (): Promise<WorldObject> => {
     group.add(earth);
 
     // Atmosphere
-    const atmosphereGeometry = new THREE.SphereGeometry(1.01, 64, 64);
+    const atmosphereGeometry = new THREE.SphereGeometry(1.0015, 64, 64);
     const atmosphereMaterial = new THREE.ShaderMaterial({
       uniforms: {
         dayColor: { value: new THREE.Color(0.5, 0.7, 1.0) },
@@ -169,7 +169,7 @@ const createEarthObject = async (): Promise<WorldObject> => {
     });
 
     const atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
-    atmosphere.scale.set(1.1, 1.1, 1.1);
+    atmosphere.scale.set(1.05, 1.05, 1.05);
     group.add(atmosphere);
 
     const markers: WorldObject[] = [];
