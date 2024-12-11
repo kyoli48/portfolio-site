@@ -8,8 +8,6 @@ type RawMetadata = Partial<BaseXMDMetadata> & {
   color?: string
   github?: string
   demo?: string
-  readingTime?: string | number
-  wordCount?: string | number
   draft?: string | boolean
   featured?: string | boolean
   hide?: string | boolean
@@ -44,14 +42,6 @@ function validateMetadata(metadata: RawMetadata, type: 'blog' | 'essays' | 'proj
   }
   if (typeof metadata.hide === 'string') {
     metadata.hide = metadata.hide.toLowerCase() === 'true'
-  }
-
-  // Convert numeric strings
-  if (typeof metadata.readingTime === 'string') {
-    metadata.readingTime = parseInt(metadata.readingTime, 10)
-  }
-  if (typeof metadata.wordCount === 'string') {
-    metadata.wordCount = parseInt(metadata.wordCount, 10)
   }
 
   // Validate type-specific metadata
